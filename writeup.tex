@@ -1,0 +1,94 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\newcommand{\ssre}{\mathcal{P}}
+
+\begin{document}
+
+\section{Rewriting}
+
+\subsection*{Partial rewrite existence}
+
+Take any regex. Clearly, for that regex to match, it must recognize each substring of the
+match. Therefore, a regex exists for every substring of a match.
+
+From a DFA perspective, every state can be converted to an accepting state which will then match
+every substring.
+
+\subsection*{Rewrite rules}
+
+\begin{align*}
+\ssre(s) &= (s|s_{[0,k-1]}|\ldots |s_0)\\
+\ssre(E?) &= \ssre(E)?\\
+\ssre(E*) &= E*\ssre(E)?\\
+\ssre(E|E) &= \ssre(E)|\ssre(E)\\
+\ssre(E_{1}E_{2}) &= E_{1}\ssre(E_{2})|\ssre(E_{1})\\
+\ssre(E\{k\}) &= \ssre(E_{1}E_{2}...E_{k})
+\end{align*}   
+
+\subsection*{$\ssre(s)$ Rewrite}
+
+Given a string, its partial regex is:
+
+\begin{equation*}
+    \ssre(s) = (s[0:k]|s[0:k-1]|\ldots|s[0])
+\end{equation*}
+
+The order of longest substring to shortest is important; many regex engines
+will short circuit on the first $|$ encountered. Here is an example of an
+incorrect partial regex if the order is shortest to longest substring:
+
+\begin{equation*}
+    \ssre(abc) = (a|ab|abc)
+\end{equation*}
+
+Then, \texttt{/(a|ab|abc)/.match(abc)} will short circuit to $a$ rather than the full match $abc$.
+
+\subsection*{$\ssre(E?)$ Rule}
+
+$\ssre(E)$ matches any substring; $\ssre(E)? = (\ssre(E)|\epsilon)$.
+Therefore, this matches any substring or the empty string, satisfying the $?$ operator. 
+$\blacksquare$
+
+\subsection*{$\ssre(E*)$ Rule}
+
+IH:
+\begin{equation*}
+    \ssre(E^k) = E^j\ssre(E)?, 0\leq j \leq k
+\end{equation*}
+
+For $k=0$, then resolving the expression as $E^0\epsilon$ matches all substrings.
+For $k=1$, resolving the expression as $E^0\ssre(E)$ matches all of its substrings.
+
+\begin{alignat*}{2}
+    \ssre(E^{k+1}) &= E^j\ssre(E)?, 0\leq j \leq k+1\\
+    &= (E^{k+1}\ssre(E)? | (E^j\ssre(E)?, 0\leq j \leq k)) && \text{Split interval}\\
+    &= E^{k+1} | \ssre(E^k) && \text{Resolve $E?=\epsilon$, Apply inductive hypothesis}
+\end{alignat*}
+
+The above shows the partial transform can match on $E^{k+1}$ or any of its $E^k$ substrings
+which includes $E^k\ssre(E)$ \textemdash{} that is, right up until $E^{k+1}$. 
+$\blacksquare$
+
+\subsection*{$\ssre(E_1|E_2)$ Rule}
+
+\begin{equation*}
+\ssre(E_1|E_2) = \ssre(E_1)|\ssre(E_2)
+\end{equation*}
+
+Clearly $\ssre(E_1)$ matches all substrings of $E_1$ and $\ssre(E_2)$ matches
+all substrings of $E_2$; this rewrite matches all substrings of either expression. 
+$\blacksquare$
+
+\subsection*{$\ssre(E_{1}E_{2})$ Rule}
+
+\begin{equation*}
+    \ssre(E_{1}E_{2}) = E_1 \ssre(E_2) | \ssre(E_1)
+\end{equation*}
+
+If $s$ is a substring of $E_1$, then it is matched by $\ssre(E_1)$. Otherwise, if $s$
+is a substring of $E_1$ concat some substring of $E_2$ then $E_1 \ssre(E_2)$ matches it.
+$\blacksquare$
+
+\end{document}
